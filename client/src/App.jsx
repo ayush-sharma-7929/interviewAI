@@ -5,7 +5,11 @@ import Auth from "./pages/Auth.jsx";
 import { useEffect } from "react";
 import axios from "axios";
 import { ServerURL } from "./config.js";
+import { useDispatch } from "react-redux";
+import { setUserData } from "./redux/userSlice.js";
+
 function App() {
+    const dispatch = useDispatch();
     useEffect(() => {
         const getUser = async () => {
             try {
@@ -13,13 +17,14 @@ function App() {
                     `${ServerURL}/api/user/current_user`,
                     { withCredentials: true },
                 );
-                console.log("Current user:", result.data);
+                dispatch(setUserData(result.data));
             } catch (error) {
                 console.error("Error fetching user:", error);
+                dispatch(setUserData(null));
             }
         };
         getUser();
-    }, []);
+    }, [dispatch]);
     return (
         <Routes>
             <Route path="/" element={<Home />} />

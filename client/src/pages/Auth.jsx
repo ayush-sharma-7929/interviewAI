@@ -5,8 +5,13 @@ import { FcGoogle } from "react-icons/fc";
 import { auth, provider } from "../utils/firebase";
 import { signInWithPopup } from "firebase/auth";
 import { ServerURL } from "../config.js";
+import { useDispatch } from "react-redux";
+import { useNavigate } from "react-router-dom";
+import { setUserData } from "../redux/userSlice.js";
 import axios from "axios";
 function Auth() {
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const handleGoogleAuth = async () => {
         try {
             const response = await signInWithPopup(auth, provider);
@@ -18,7 +23,8 @@ function Auth() {
                 { name, email },
                 { withCredentials: true },
             );
-            console.log(result.data);
+            dispatch(setUserData(result.data));
+            navigate("/");
         } catch (error) {
             console.error("Error signing in with Google:", error);
         }
