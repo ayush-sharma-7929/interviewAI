@@ -12,7 +12,6 @@ function Navbar() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const [showMenu, setShowMenu] = useState(false);
-
     const handleLogout = async () => {
         try {
             await axios.get(`${ServerURL}/api/auth/logout`, {
@@ -20,7 +19,7 @@ function Navbar() {
             });
             dispatch(setUserData(null));
             setShowMenu(false);
-            navigate("/auth");
+            navigate("/");
         } catch (error) {
             console.error("Error logging out:", error);
         }
@@ -45,7 +44,6 @@ function Navbar() {
                         InterviewAI
                     </h1>
                 </div>
-
                 <div className="flex items-center gap-4 relative">
                     {userData ? (
                         <>
@@ -53,7 +51,6 @@ function Navbar() {
                                 <BsCoin size={16} />
                                 {userData.credits ?? 0}
                             </div>
-
                             <button
                                 onClick={() => setShowMenu((prev) => !prev)}
                                 className="w-9 h-9 bg-black text-white rounded-full flex items-center justify-center font-semibold"
@@ -61,7 +58,6 @@ function Navbar() {
                             >
                                 {userData.name?.charAt(0).toUpperCase()}
                             </button>
-
                             {showMenu && (
                                 <div className="absolute right-0 top-12 w-48 bg-white shadow-xl border border-gray-200 rounded-xl p-3 z-50">
                                     <p className="text-sm font-medium truncate mb-2">

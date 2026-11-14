@@ -1,14 +1,17 @@
 import { useSelector } from "react-redux";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { IoSparkles } from "react-icons/io5";
 import { BsMic, BsBarChart, BsFileEarmarkText } from "react-icons/bs";
 import Navbar from "../components/navbar.jsx";
+import Footer from "../components/footer.jsx";
 
 const features = [
     {
         icon: <BsMic size={22} />,
         title: "Practice Real Interviews",
+        path: "/interview",
         text: "Answer AI-generated questions tailored to your role and experience level.",
     },
     {
@@ -26,12 +29,38 @@ const features = [
 function Home() {
     const userData = useSelector((state) => state.user.userdata);
     const navigate = useNavigate();
+    const location = useLocation();
+    const [clicked, setClicked] = useState(false);
+
+    // popup shows after a redirect from /interview, or after a click while signed out
+    const showAlert = clicked || location.state?.signInRequired;
+
+    useEffect(() => {
+        if (!showAlert) return;
+        const timer = setTimeout(() => {
+            setClicked(false);
+            navigate("/", { replace: true, state: null });
+        }, 3000);
+        return () => clearTimeout(timer);
+    }, [showAlert, navigate]);
+
+    const handleFeatureClick = (path) => {
+        if (!path) return;
+        if (!userData) return setClicked(true);
+        navigate(path);
+    };
 
     return (
-        <div className="w-full min-h-screen bg-[#f3f3f3]">
+        <div className="w-full min-h-screen bg-[#f3f3f3] flex flex-col">
             <Navbar />
 
-            <main className="max-w-6xl mx-auto px-6 py-20">
+            {showAlert && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[999] bg-red-600 text-white px-6 py-3 rounded-xl shadow-lg font-medium">
+                    Sign in before starting the interview
+                </div>
+            )}
+
+            <main className="flex-1 w-full max-w-6xl mx-auto px-6 py-20">
                 <motion.section
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
@@ -54,9 +83,17 @@ function Home() {
                     </p>
 
                     {userData ? (
-                        <p className="mt-10 text-lg font-medium">
-                            Welcome back, {userData.name}!
-                        </p>
+                        <>
+                            <p className="mt-10 text-lg font-medium">
+                                Welcome back, {userData.name}!
+                            </p>
+                            <button
+                                className="mt-4 px-8 py-3 bg-black text-white rounded-full shadow-md font-medium"
+                                onClick={() => navigate("/history")}
+                            >
+                                View History
+                            </button>
+                        </>
                     ) : (
                         <motion.button
                             whileHover={{ opacity: 0.9, scale: 1.03 }}
@@ -80,7 +117,10 @@ function Home() {
                                 delay: 0.1 * index,
                                 ease: "easeInOut",
                             }}
-                            className="bg-white rounded-3xl border border-gray-200 shadow-md p-8"
+                            onClick={() => handleFeatureClick(feature.path)}
+                            className={`bg-white rounded-3xl border border-gray-200 shadow-md p-8 ${
+                                feature.path ? "cursor-pointer hover:shadow-lg" : ""
+                            }`}
                         >
                             <div className="bg-black text-white w-12 h-12 rounded-xl flex items-center justify-center mb-5">
                                 {feature.icon}
@@ -95,6 +135,8 @@ function Home() {
                     ))}
                 </section>
             </main>
+
+            <Footer />
         </div>
     );
 }

@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import connectDB from "./config/connectDB.js";
 import authRouter from "./routes/auth_route.js";
 import userRouter from "./routes/user_route.js";
+import interviewRouter from "./routes/interview_route.js";
 dotenv.config();
 import cors from "cors";
 import cookieParser from "cookie-parser";
@@ -21,6 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 app.use("/api/auth", authRouter);
 app.use("/api/user", userRouter);
+app.use("/api/interview", interviewRouter);
 const PORT = process.env.PORT || 6000;
 
 app.get("/", (req, res) => {
