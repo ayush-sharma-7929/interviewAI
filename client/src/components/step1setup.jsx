@@ -12,16 +12,17 @@ function Step1setup({ onStart }) {
     const [skills, setSkills] = useState([]);
     const [projects, setProjects] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [starting, setStarting] = useState(false);
     const [error, setError] = useState("");
 
     // Upload the resume and let AI fill in role / experience
-    const handleAnalyze = async () => {
-        if (!resumeFile) return;
+    const handleAnalyze = async (file) => {
+        if (!file) return;
         setLoading(true);
         setError("");
         try {
             const formData = new FormData();
-            formData.append("resume", resumeFile);
+            formData.append("resume", file);
 
             const { data } = await axios.post(
                 `${ServerURL}/api/interview/resume`,
@@ -41,12 +42,34 @@ function Step1setup({ onStart }) {
         }
     };
 
-    const handleStart = () => {
+    // Ask the server to generate the questions, then move to step 2
+    const handleStart = async () => {
         if (!role.trim() || !experience.trim()) {
             setError("Please enter your role and experience");
             return;
         }
-        onStart({ role, experience, mode, skills, projects, resumeText });
+        setStarting(true);
+        setError("");
+        try {
+            const { data } = await axios.post(
+                `${ServerURL}/api/interview/generate-questions`,
+                { role, experience, mode, skills, projects, resumeText },
+                { withCredentials: true },
+            );
+            onStart({
+                role,
+                experience,
+                mode,
+                interviewId: data.interviewId,
+                questions: data.questions,
+            });
+        } catch (err) {
+            setError(
+                err.response?.data?.message || "Could not start the interview",
+            );
+        } finally {
+            setStarting(false);
+        }
     };
 
     return (
@@ -107,33 +130,50 @@ function Step1setup({ onStart }) {
                         <option>HR</option>
                     </select>
 
-                    <div className="border border-dashed border-gray-300 rounded-lg p-4">
-                        <p className="text-sm text-gray-600 mb-2">
-                            Optional: upload your resume (PDF)
+                    <div className="border hover:border-green-900 border-dashed border-gray-300 rounded-lg p-4">
+                        <p className="text-sm text-gray-600 mb-3">
+                            upload your resume (PDF)
                         </p>
+
+                        {/* hidden native input, styled label acts as the button */}
                         <input
+                            id="resume-upload"
                             type="file"
                             accept="application/pdf"
-                            onChange={(e) => setResumeFile(e.target.files[0])}
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files[0];
+                                setResumeFile(file);
+                                handleAnalyze(file);
+                            }}
                         />
-                        {resumeFile && (
-                            <button
-                                onClick={handleAnalyze}
-                                disabled={loading}
-                                className="mt-3 px-4 py-2 bg-gray-800 text-white rounded-lg disabled:opacity-50"
+                        <div className="flex items-center gap-3">
+                            <label
+                                htmlFor="resume-upload"
+                                className="cursor-pointer px-4 py-2 bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 rounded-lg text-sm font-medium"
                             >
-                                {loading ? "Analyzing..." : "Analyze Resume"}
-                            </button>
-                        )}
+                                {resumeFile ? "Change file" : "Choose PDF"}
+                            </label>
+                            <span className="text-sm text-gray-500 truncate">
+                                {loading
+                                    ? "Reading resume..."
+                                    : resumeFile
+                                      ? resumeFile.name
+                                      : "No file selected"}
+                            </span>
+                        </div>
                     </div>
 
                     {error && <p className="text-red-500 text-sm">{error}</p>}
 
                     <button
                         onClick={handleStart}
-                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold"
+                        disabled={loading || starting}
+                        className="w-full py-3 bg-green-600 hover:bg-green-700 text-white rounded-lg font-semibold disabled:opacity-50"
                     >
-                        Start Interview
+                        {starting
+                            ? "Generating questions..."
+                            : "Start Interview"}
                     </button>
                 </motion.div>
             </div>

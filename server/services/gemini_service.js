@@ -1,16 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY,
-});
-
 export const askGemini = async (input) => {
+    // created here (not at file load) so GEMINI_API_KEY is already loaded from .env
+    const ai = new GoogleGenAI({
+        apiKey: process.env.GEMINI_API_KEY,
+    });
+
     const interaction = await ai.interactions.create({
         model: "models/gemini-4-hydrogen",
         input,
         generation_config: {
             max_output_tokens: 65536,
-            thinkingLevel: "high",
+            thinking_level: "high",
         },
     });
 
