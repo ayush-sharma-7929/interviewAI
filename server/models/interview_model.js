@@ -5,6 +5,9 @@ const questionSchema = new mongoose.Schema({
     answer: { type: String, default: "" },
     feedback: { type: String, default: "" },
     score: { type: Number, default: 0, min: 0, max: 10 },
+    confidence: { type: Number, default: 0, min: 0, max: 10 },
+    communication: { type: Number, default: 0, min: 0, max: 10 },
+    correctness: { type: Number, default: 0, min: 0, max: 10 },
 });
 
 const interviewSchema = new mongoose.Schema(

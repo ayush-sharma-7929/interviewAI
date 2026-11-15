@@ -2,8 +2,12 @@ import { useState } from "react";
 import { motion } from "motion/react";
 import axios from "axios";
 import { ServerURL } from "../config.js";
+import { useDispatch, useSelector } from "react-redux";
+import { setUserData } from "../redux/userSlice.js";
 
 function Step1setup({ onStart }) {
+    const dispatch = useDispatch();
+    const userData = useSelector((state) => state.user.userdata);
     const [role, setRole] = useState("");
     const [experience, setExperience] = useState("");
     const [mode, setMode] = useState("Technical");
@@ -56,6 +60,8 @@ function Step1setup({ onStart }) {
                 { role, experience, mode, skills, projects, resumeText },
                 { withCredentials: true },
             );
+            // update the credits shown in the navbar
+            dispatch(setUserData({ ...userData, credits: data.credits }));
             onStart({
                 role,
                 experience,

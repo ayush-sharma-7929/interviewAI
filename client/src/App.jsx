@@ -8,6 +8,7 @@ import { ServerURL } from "./config.js";
 import { useDispatch, useSelector } from "react-redux";
 import { setUserData } from "./redux/userSlice.js";
 import InterviewPage from "./pages/InterviewPage.jsx";
+import History from "./pages/history.jsx";
 
 function App() {
     const dispatch = useDispatch();
@@ -39,6 +40,10 @@ function App() {
             <Route path="/Home" element={<Home />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/interview" element={userData ? <InterviewPage /> : <Navigate to="/" state={{ signInRequired: true }} replace />} />
+            <Route
+                path="/history"
+                element={userData ? <History /> : <Navigate to="/auth" replace />}
+            />
         </Routes>
     );
 }

@@ -2,6 +2,9 @@ import fs from "fs";
 import * as pdfjsLib from "pdfjs-dist/legacy/build/pdf.mjs";
 import { askGemini } from "../services/gemini_service.js";
 import Interview from "../models/interview_model.js";
+import User from "../models/user_model.js";
+
+const INTERVIEW_COST = 20; // credits taken for each interview
 export const analyzeResume = async (req, res) => {
     try {
         if (!req.file) {
@@ -79,6 +82,17 @@ export const generateQuestion = async (req, res) => {
                 .json({ message: "Role and experience are required" });
         }
 
+        // stop early if the user cannot afford an interview
+        const user = await User.findById(req.userId);
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        if (user.credits < INTERVIEW_COST) {
+            return res.status(400).json({
+                message: `Not enough credits. An interview costs ${INTERVIEW_COST} credits.`,
+            });
+        }
+
         const prompt = `You are an interviewer. Generate exactly 5 ${mode} interview questions
 for a candidate applying as "${role}" with ${experience} of experience.
 ${skills.length ? `Skills: ${skills.join(", ")}` : ""}
@@ -110,9 +124,24 @@ Return strictly a JSON array of 5 strings, with no extra text.`;
             questions: questions.map((q) => ({ question: String(q) })),
         });
 
+        // take the credits only after the questions were created successfully
+        // ($gte in the filter keeps credits from going below zero)
+        const updatedUser = await User.findOneAndUpdate(
+            { _id: req.userId, credits: { $gte: INTERVIEW_COST } },
+            { $inc: { credits: -INTERVIEW_COST } },
+            { new: true },
+        );
+        if (!updatedUser) {
+            await Interview.findByIdAndDelete(interview._id);
+            return res.status(400).json({
+                message: `Not enough credits. An interview costs ${INTERVIEW_COST} credits.`,
+            });
+        }
+
         res.json({
             interviewId: interview._id,
             questions: interview.questions,
+            credits: updatedUser.credits,
         });
     } catch (error) {
         console.log(error);
@@ -159,8 +188,9 @@ Question: ${question.question}
 Candidate's answer: ${userAnswer}
 
 Score the answer from 0 to 10 and give short, helpful feedback (2-3 sentences).
+Also rate confidence, communication and correctness, each from 0 to 10.
 Return strictly JSON, with no extra text:
-{"score": 0, "feedback": "string"}`;
+{"score": 0, "confidence": 0, "communication": 0, "correctness": 0, "feedback": "string"}`;
 
             const aiResponse = await askGemini(prompt);
             const result = JSON.parse(
@@ -168,7 +198,11 @@ Return strictly JSON, with no extra text:
             );
 
             question.answer = userAnswer;
-            question.score = Math.max(0, Math.min(10, Number(result.score) || 0));
+            const clamp = (n) => Math.max(0, Math.min(10, Number(n) || 0));
+            question.score = clamp(result.score);
+            question.confidence = clamp(result.confidence);
+            question.communication = clamp(result.communication);
+            question.correctness = clamp(result.correctness);
             question.feedback = String(result.feedback || "");
         }
 
@@ -176,6 +210,9 @@ Return strictly JSON, with no extra text:
 
         res.json({
             score: question.score,
+            confidence: question.confidence,
+            communication: question.communication,
+            correctness: question.correctness,
             feedback: question.feedback,
         });
     } catch (error) {

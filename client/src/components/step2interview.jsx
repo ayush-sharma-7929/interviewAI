@@ -33,6 +33,9 @@ function Step2interview({ interviewData, onFinish }) {
                     question: question.question,
                     answer,
                     score: data.score,
+                    confidence: data.confidence,
+                    communication: data.communication,
+                    correctness: data.correctness,
                     feedback: data.feedback,
                 },
             ]);
